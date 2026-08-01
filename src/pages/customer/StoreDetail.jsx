@@ -1,28 +1,34 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Star, MapPin } from 'lucide-react';
+import { Star, MapPin, Mail, Phone, User, Lock } from 'lucide-react';
 import VerifiedBadge from '../../components/store/VerifiedBadge';
 import ProductCard from '../../components/product/ProductCard';
+import ReviewCard from '../../components/review/ReviewCard';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
 import { getStoreById, getStoreProducts } from '../../services/storeService';
 import { useCart } from '../../hooks/useCart';
+import { useAuth } from '../../hooks/useAuth';
+import api from '../../services/api';
 
 export default function StoreDetail() {
   const { id } = useParams();
   const [store, setStore] = useState(null);
   const [products, setProducts] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [loading, setLoading] = useState(true);
   const { addItem } = useCart();
+  const { user } = useAuth();
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([getStoreById(id), getStoreProducts(id)])
-      .then(([storeRes, productsRes]) => {
+    Promise.all([getStoreById(id), getStoreProducts(id), api.get(`/reviews/store/${id}`)])
+      .then(([storeRes, productsRes, reviewsRes]) => {
         setStore(storeRes.data.store || storeRes.data);
         setProducts(productsRes.data.products || productsRes.data || []);
+        setReviews(reviewsRes.data.reviews || []);
       })
       .catch(() => toast.error('Could not load this store right now'))
       .finally(() => setLoading(false));
@@ -53,6 +59,29 @@ export default function StoreDetail() {
         </div>
       </div>
 
+      {/* Contact details — visible to logged-in users only */}
+      <div className="bg-card border border-border rounded-card shadow-sm p-5 mb-8">
+        <h2 className="text-sm font-semibold text-text-primary mb-3">Contact</h2>
+        {user ? (
+          <div className="grid sm:grid-cols-3 gap-3 text-sm text-text-secondary">
+            <span className="inline-flex items-center gap-2">
+              <User className="w-4 h-4 text-text-muted" /> {store.ownerName}
+            </span>
+            <a href={`mailto:${store.email}`} className="inline-flex items-center gap-2 hover:text-accent">
+              <Mail className="w-4 h-4 text-text-muted" /> {store.email}
+            </a>
+            <a href={`tel:${store.phone}`} className="inline-flex items-center gap-2 hover:text-accent">
+              <Phone className="w-4 h-4 text-text-muted" /> {store.phone}
+            </a>
+          </div>
+        ) : (
+          <p className="text-sm text-text-muted flex items-center gap-1.5">
+            <Lock className="w-4 h-4" />
+            <a href="/login" className="text-accent font-medium">Sign in</a>&nbsp;to see owner contact details.
+          </p>
+        )}
+      </div>
+
       {categories.length > 1 && (
         <div className="flex gap-2 overflow-x-auto scrollbar-none pb-2 mb-6">
           {categories.map((c) => (
@@ -72,7 +101,7 @@ export default function StoreDetail() {
       {visible.length === 0 ? (
         <EmptyState title="No products yet" description="This store hasn't listed products in this category." />
       ) : (
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-10">
           {visible.map((p) => (
             <ProductCard
               key={p._id}
@@ -87,6 +116,22 @@ export default function StoreDetail() {
           ))}
         </div>
       )}
+
+      {/* Reviews */}
+      <div className="bg-card border border-border rounded-card shadow-sm p-5">
+        <h2 className="text-sm font-semibold text-text-primary mb-1">
+          Reviews {reviews.length > 0 && <span className="text-text-muted font-normal">({reviews.length})</span>}
+        </h2>
+        {reviews.length === 0 ? (
+          <p className="text-sm text-text-muted py-4">No reviews yet — be the first to order and review.</p>
+        ) : (
+          <div>
+            {reviews.map((r) => (
+              <ReviewCard key={r._id} review={r} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

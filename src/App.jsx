@@ -12,6 +12,8 @@ import Cart from './pages/customer/Cart';
 import Checkout from './pages/customer/Checkout';
 import OrderSuccess from './pages/customer/OrderSuccess';
 import MyOrders from './pages/customer/MyOrders';
+import OrderDetail from './pages/customer/OrderDetail';
+import ReviewSubmit from './pages/customer/ReviewSubmit';
 import Profile from './pages/customer/Profile';
 import Addresses from './pages/customer/Addresses';
 import Wishlist from './pages/customer/Wishlist';
@@ -83,6 +85,22 @@ export default function App() {
             element={
               <ProtectedRoute roles={['customer']}>
                 <MyOrders />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders/:id"
+            element={
+              <ProtectedRoute roles={['customer']}>
+                <OrderDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders/:id/review"
+            element={
+              <ProtectedRoute roles={['customer']}>
+                <ReviewSubmit />
               </ProtectedRoute>
             }
           />
