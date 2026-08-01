@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2, Package } from 'lucide-react';
+import { Plus, Pencil, Trash2, Package, ImagePlus } from 'lucide-react';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import EmptyState from '../../components/common/EmptyState';
@@ -8,7 +8,7 @@ import Loader from '../../components/common/Loader';
 import api from '../../services/api';
 import { formatPrice } from '../../utils/formatPrice';
 
-const emptyForm = { name: '', price: '', mrp: '', unit: '', stock: '', tags: '' };
+const emptyForm = { name: '', price: '', mrp: '', unit: '', stock: '', tags: '', image: null };
 
 export default function ManageProducts() {
   const [products, setProducts] = useState([]);
@@ -16,6 +16,7 @@ export default function ManageProducts() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [existingImage, setExistingImage] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const loadProducts = () => {
@@ -31,29 +32,44 @@ export default function ManageProducts() {
   const openNew = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setExistingImage(null);
     setModalOpen(true);
   };
 
   const openEdit = (p) => {
     setEditingId(p._id);
-    setForm({ name: p.name, price: p.price, mrp: p.mrp || '', unit: p.unit, stock: p.stock, tags: (p.tags || []).join(', ') });
+    setForm({
+      name: p.name,
+      price: p.price,
+      mrp: p.mrp || '',
+      unit: p.unit,
+      stock: p.stock,
+      tags: (p.tags || []).join(', '),
+      image: null,
+    });
+    setExistingImage(p.images?.[0] || null);
     setModalOpen(true);
   };
 
   const handleSave = async () => {
     setSaving(true);
-    const payload = {
-      ...form,
-      price: Number(form.price),
-      mrp: form.mrp ? Number(form.mrp) : undefined,
-      stock: Number(form.stock),
-      tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
-    };
+    const fd = new FormData();
+    fd.append('name', form.name);
+    fd.append('price', form.price);
+    if (form.mrp) fd.append('mrp', form.mrp);
+    fd.append('unit', form.unit);
+    fd.append('stock', form.stock);
+    fd.append(
+      'tags',
+      JSON.stringify(form.tags.split(',').map((t) => t.trim()).filter(Boolean))
+    );
+    if (form.image) fd.append('image', form.image);
+
     try {
       if (editingId) {
-        await api.put(`/products/${editingId}`, payload);
+        await api.put(`/products/${editingId}`, fd);
       } else {
-        await api.post('/products', payload);
+        await api.post('/products', fd);
       }
       setModalOpen(false);
       loadProducts();
@@ -91,12 +107,19 @@ export default function ManageProducts() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {products.map((p) => (
             <div key={p._id} className="bg-card border border-border rounded-card shadow-sm p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-text-primary">{p.name}</h3>
+              <div className="flex items-start gap-3">
+                <div className="w-14 h-14 rounded-lg bg-surface flex items-center justify-center text-xl flex-shrink-0 overflow-hidden">
+                  {p.images?.[0] ? (
+                    <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
+                  ) : (
+                    '🛍️'
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold text-text-primary truncate">{p.name}</h3>
                   <p className="text-xs text-text-muted">{p.unit} • Stock: {p.stock}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-shrink-0">
                   <button onClick={() => openEdit(p)} className="text-text-muted hover:text-accent"><Pencil className="w-4 h-4" /></button>
                   <button onClick={() => handleDelete(p._id)} className="text-text-muted hover:text-accent-red"><Trash2 className="w-4 h-4" /></button>
                 </div>
@@ -109,6 +132,26 @@ export default function ManageProducts() {
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? 'Edit product' : 'Add product'}>
         <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium text-text-secondary mb-1.5 block">Product photo</label>
+            <div className="flex items-center gap-3">
+              <div className="w-16 h-16 rounded-lg bg-input border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
+                {form.image ? (
+                  <img src={URL.createObjectURL(form.image)} alt="Preview" className="w-full h-full object-cover" />
+                ) : existingImage ? (
+                  <img src={existingImage} alt="Current" className="w-full h-full object-cover" />
+                ) : (
+                  <ImagePlus className="w-5 h-5 text-text-muted" />
+                )}
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setForm({ ...form, image: e.target.files[0] })}
+                className="flex-1 text-xs text-text-secondary file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:bg-accent-soft file:text-accent file:text-xs file:font-semibold"
+              />
+            </div>
+          </div>
           <input placeholder="Product name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full bg-input border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:border-accent" />
           <div className="grid grid-cols-2 gap-3">
             <input placeholder="Price (₹)" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="bg-input border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:border-accent" />

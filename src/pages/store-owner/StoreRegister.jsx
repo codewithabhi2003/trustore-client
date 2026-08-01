@@ -56,7 +56,7 @@ export default function StoreRegister() {
     storeName: '', ownerName: '', email: '', phone: '', category: categories[0],
     street: '', city: '', state: '', pincode: '',
     pin: null,
-    aadhaarCard: null, shopLicense: null,
+    aadhaarCard: null, shopLicense: null, logo: null,
   });
 
   useEffect(() => {
@@ -162,6 +162,26 @@ export default function StoreRegister() {
             <select value={form.category} onChange={(e) => update({ category: e.target.value })} className="w-full bg-input border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:border-accent">
               {categories.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
+
+            <div>
+              <label className="text-sm font-medium text-text-primary mb-1.5 block">Store photo (optional)</label>
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 rounded-lg bg-input border border-border flex items-center justify-center overflow-hidden flex-shrink-0 text-xl">
+                  {form.logo ? (
+                    <img src={URL.createObjectURL(form.logo)} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    '🏪'
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => update({ logo: e.target.files[0] })}
+                  className="flex-1 text-sm text-text-secondary file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-accent-soft file:text-accent file:text-sm file:font-semibold"
+                />
+              </div>
+              <p className="text-xs text-text-muted mt-1.5">Customers will see this on your store card and page.</p>
+            </div>
           </div>
         )}
 
@@ -250,6 +270,7 @@ export default function StoreRegister() {
               {form.pin ? `${form.pin.lat.toFixed(6)}, ${form.pin.lng.toFixed(6)}` : 'not set'}
             </p>
             <p><span className="text-text-muted">Documents:</span> {form.aadhaarCard?.name}, {form.shopLicense?.name}</p>
+            <p><span className="text-text-muted">Store photo:</span> {form.logo?.name || 'not added'}</p>
           </div>
         )}
 
