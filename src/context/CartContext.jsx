@@ -1,29 +1,37 @@
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useEffect, useRef, useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
 
-export const CartContext = createContext(null);
+export const WishlistContext = createContext(null);
 
-const STORAGE_KEY = 'trustore-cart';
+const keyFor = (userId) => `trustore-wishlist-${userId || 'guest'}`;
 
-export function CartProvider({ children }) {
-  const [items, setItems] = useState(() => {
+export function WishlistProvider({ children }) {
+  const { user } = useAuth();
+  const [items, setItems] = useState([]);
+  const activeKey = useRef(keyFor(user?.id));
+
+  // Same per-user scoping as CartContext — switches to the right wishlist whenever
+  // who's logged in changes, so one user's saved items never leak into another's.
+  useEffect(() => {
+    const key = keyFor(user?.id);
+    activeKey.current = key;
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      setItems(JSON.parse(localStorage.getItem(key)) || []);
     } catch {
-      return [];
+      setItems([]);
     }
-  });
+  }, [user?.id]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    localStorage.setItem(activeKey.current, JSON.stringify(items));
   }, [items]);
 
-  const addItem = (product, storeId, storeName, quantity = 1) => {
+  const isWishlisted = (productId) => items.some((i) => i.productId === productId);
+
+  const toggleWishlist = (product, storeId, storeName) => {
     setItems((prev) => {
-      const existing = prev.find((i) => i.productId === product._id);
-      if (existing) {
-        return prev.map((i) =>
-          i.productId === product._id ? { ...i, quantity: i.quantity + quantity } : i
-        );
+      if (prev.some((i) => i.productId === product._id)) {
+        return prev.filter((i) => i.productId !== product._id);
       }
       return [
         ...prev,
@@ -33,7 +41,6 @@ export function CartProvider({ children }) {
           image: product.images?.[0],
           price: product.price,
           unit: product.unit,
-          quantity,
           storeId,
           storeName,
         },
@@ -41,30 +48,12 @@ export function CartProvider({ children }) {
     });
   };
 
-  const updateQuantity = (productId, quantity) => {
-    if (quantity <= 0) return removeItem(productId);
-    setItems((prev) => prev.map((i) => (i.productId === productId ? { ...i, quantity } : i)));
-  };
-
-  const removeItem = (productId) =>
+  const removeFromWishlist = (productId) =>
     setItems((prev) => prev.filter((i) => i.productId !== productId));
 
-  const clearCart = () => setItems([]);
-
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
-
-  const storeGroups = items.reduce((groups, item) => {
-    if (!groups[item.storeId]) groups[item.storeId] = { storeName: item.storeName, items: [] };
-    groups[item.storeId].items.push(item);
-    return groups;
-  }, {});
-
   return (
-    <CartContext.Provider
-      value={{ items, addItem, updateQuantity, removeItem, clearCart, subtotal, itemCount, storeGroups }}
-    >
+    <WishlistContext.Provider value={{ items, isWishlisted, toggleWishlist, removeFromWishlist }}>
       {children}
-    </CartContext.Provider>
+    </WishlistContext.Provider>
   );
 }
