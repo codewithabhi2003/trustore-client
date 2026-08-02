@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Package, MapPin } from 'lucide-react';
+import { Package, MapPin, CreditCard } from 'lucide-react';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
 import OrderStatusBadge from '../../components/order/OrderStatusBadge';
@@ -10,6 +10,11 @@ import Button from '../../components/common/Button';
 import api from '../../services/api';
 import { formatDate } from '../../utils/formatDate';
 import { formatPrice } from '../../utils/formatPrice';
+
+// Older orders were saved before fullAddress was reliably populated — fall back to
+// building a display string from the individual fields so those still show correctly.
+const formatAddress = (addr) =>
+  addr?.fullAddress || [addr?.street, addr?.city, addr?.state, addr?.pincode].filter(Boolean).join(', ');
 
 export default function OrderDetail() {
   const { id } = useParams();
@@ -54,7 +59,8 @@ export default function OrderDetail() {
       </div>
 
       <div className="bg-card border border-border rounded-card shadow-sm p-5 mb-5">
-        <OrderTimeline status={order.status} />
+        <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-4">Order progress</h2>
+        <OrderTimeline status={order.status} statusHistory={order.statusHistory} />
       </div>
 
       <div className="bg-card border border-border rounded-card shadow-sm p-5 mb-5">
@@ -83,12 +89,42 @@ export default function OrderDetail() {
         </div>
       </div>
 
-      {order.deliveryAddress?.fullAddress && (
+      {(order.deliveryAddress?.fullAddress || order.deliveryAddress?.street) && (
         <div className="bg-card border border-border rounded-card shadow-sm p-5 mb-5">
-          <h2 className="text-sm font-semibold text-text-primary mb-2 flex items-center gap-1.5">
-            <MapPin className="w-4 h-4" /> Delivery address
+          <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-3 flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5" /> Delivery address
           </h2>
-          <p className="text-sm text-text-secondary">{order.deliveryAddress.fullAddress}</p>
+          <p className="text-sm font-semibold text-text-primary">{formatAddress(order.deliveryAddress)}</p>
+        </div>
+      )}
+
+      {order.payment && (
+        <div className="bg-card border border-border rounded-card shadow-sm p-5 mb-5">
+          <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-3 flex items-center gap-1.5">
+            <CreditCard className="w-3.5 h-3.5" /> Payment
+          </h2>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-text-secondary">Amount paid</span>
+              <span className="font-nums font-semibold text-text-primary">{formatPrice(order.totalAmount)}</span>
+            </div>
+            {order.payment.razorpayPaymentId && (
+              <div className="flex justify-between">
+                <span className="text-text-secondary">Payment ID</span>
+                <span className="font-nums text-text-muted text-xs">{order.payment.razorpayPaymentId}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center">
+              <span className="text-text-secondary">Status</span>
+              <span
+                className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                  order.payment.status === 'paid' ? 'bg-accent/15 text-accent-dark' : 'bg-accent-yellow/10 text-accent-yellow'
+                }`}
+              >
+                {order.payment.status}
+              </span>
+            </div>
+          </div>
         </div>
       )}
 

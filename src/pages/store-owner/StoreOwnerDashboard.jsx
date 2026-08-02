@@ -83,6 +83,7 @@ export default function StoreOwnerDashboard() {
             <thead className="bg-surface text-text-muted text-xs uppercase">
               <tr>
                 <th className="text-left px-4 py-3 font-medium">Order</th>
+                <th className="text-left px-4 py-3 font-medium">Items</th>
                 <th className="text-left px-4 py-3 font-medium">Date</th>
                 <th className="text-left px-4 py-3 font-medium">Amount</th>
                 <th className="text-left px-4 py-3 font-medium">Status</th>
@@ -92,6 +93,9 @@ export default function StoreOwnerDashboard() {
               {orders.slice(0, 10).map((o) => (
                 <tr key={o._id} className="border-t border-border">
                   <td className="px-4 py-3 font-nums">#{o._id.slice(-6)}</td>
+                  <td className="px-4 py-3 text-text-secondary max-w-xs truncate">
+                    {o.items?.map((item) => `${item.productName} ×${item.quantity}`).join(', ')}
+                  </td>
                   <td className="px-4 py-3 text-text-secondary">{formatDate(o.createdAt)}</td>
                   <td className="px-4 py-3 font-nums font-semibold">{formatPrice(o.totalAmount)}</td>
                   <td className="px-4 py-3"><OrderStatusBadge status={o.status} /></td>
