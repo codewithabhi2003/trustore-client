@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import StarRating from './StarRating';
 import Button from '../common/Button';
@@ -8,13 +8,17 @@ export default function ReviewForm({ orderId, storeId, onSubmitted }) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false); // synchronous guard — setLoading(true) alone isn't
+  // fast enough to block a second click that lands before the re-render disables the button
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     if (rating === 0) {
       toast.error('Pick a star rating first');
       return;
     }
+    submittingRef.current = true;
     setLoading(true);
     try {
       await api.post('/reviews', { orderId, storeId, rating, comment });
@@ -22,6 +26,7 @@ export default function ReviewForm({ orderId, storeId, onSubmitted }) {
       onSubmitted?.();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not submit your review.');
+      submittingRef.current = false; // allow a retry after a genuine failure
     } finally {
       setLoading(false);
     }

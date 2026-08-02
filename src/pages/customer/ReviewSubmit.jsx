@@ -1,102 +1,76 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Package, MapPin } from 'lucide-react';
+import { Package } from 'lucide-react';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
-import OrderStatusBadge from '../../components/order/OrderStatusBadge';
-import OrderTimeline from '../../components/order/OrderTimeline';
-import Button from '../../components/common/Button';
+import ReviewForm from '../../components/review/ReviewForm';
 import api from '../../services/api';
-import { formatDate } from '../../utils/formatDate';
-import { formatPrice } from '../../utils/formatPrice';
 
-export default function OrderDetail() {
+export default function ReviewSubmit() {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     api
       .get(`/orders/${id}`)
       .then((res) => setOrder(res.data.order || res.data))
-      .catch((err) => toast.error(err.response?.data?.message || 'Could not load this order'))
+      .catch(() => setOrder(null))
       .finally(() => setLoading(false));
   }, [id]);
 
   if (loading) return <Loader fullScreen label="Loading order..." />;
-  if (!order) {
+
+  if (!order || order.status !== 'Completed') {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20">
-        <EmptyState icon={Package} title="Order not found" />
+      <div className="max-w-md mx-auto px-4 py-20">
+        <EmptyState
+          icon={Package}
+          title="This order can't be reviewed"
+          description="Only completed orders can be reviewed."
+          action={
+            <Link to="/orders" className="text-sm font-semibold text-accent">
+              Back to my orders
+            </Link>
+          }
+        />
+      </div>
+    );
+  }
+
+  if (order.isReviewed) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-20">
+        <EmptyState
+          icon={Package}
+          title="You already reviewed this order"
+          action={
+            <Link to="/orders" className="text-sm font-semibold text-accent">
+              Back to my orders
+            </Link>
+          }
+        />
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-heading font-bold text-text-primary">
-            Order #{order._id.slice(-6)}
-          </h1>
-          <p className="text-sm text-text-secondary mt-0.5">
-            {order.storeId?.storeName && (
-              <Link to={`/store/${order.storeId._id}`} className="hover:text-accent">
-                {order.storeId.storeName}
-              </Link>
-            )}
-            {' • '}
-            {formatDate(order.createdAt)}
-          </p>
-        </div>
-        <OrderStatusBadge status={order.status} />
-      </div>
+    <div className="max-w-md mx-auto px-4 sm:px-6 py-10">
+      <h1 className="text-2xl font-heading font-bold text-text-primary mb-1">
+        Review your order
+      </h1>
+      <p className="text-sm text-text-secondary mb-6">{order.storeId?.storeName || 'Trustore order'}</p>
 
-      <div className="bg-card border border-border rounded-card shadow-sm p-5 mb-5">
-        <OrderTimeline status={order.status} />
-      </div>
-
-      <div className="bg-card border border-border rounded-card shadow-sm p-5 mb-5">
-        <h2 className="text-sm font-semibold text-text-primary mb-3">Items</h2>
-        <div className="space-y-3">
-          {order.items?.map((item, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-surface flex items-center justify-center text-lg flex-shrink-0 overflow-hidden">
-                {item.productImage ? (
-                  <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
-                ) : (
-                  '🛍️'
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text-primary truncate">{item.productName}</p>
-                <p className="text-xs text-text-muted">{item.quantity} × {formatPrice(item.price)} {item.unit ? `• ${item.unit}` : ''}</p>
-              </div>
-              <span className="font-nums font-semibold text-sm">{formatPrice(item.price * item.quantity)}</span>
-            </div>
-          ))}
-        </div>
-        <div className="border-t border-border mt-4 pt-4 flex justify-between text-sm font-bold">
-          <span>Total</span>
-          <span className="font-nums">{formatPrice(order.totalAmount)}</span>
-        </div>
-      </div>
-
-      {order.deliveryAddress?.fullAddress && (
-        <div className="bg-card border border-border rounded-card shadow-sm p-5 mb-5">
-          <h2 className="text-sm font-semibold text-text-primary mb-2 flex items-center gap-1.5">
-            <MapPin className="w-4 h-4" /> Delivery address
-          </h2>
-          <p className="text-sm text-text-secondary">{order.deliveryAddress.fullAddress}</p>
-        </div>
-      )}
-
-      {order.status === 'Completed' && !order.isReviewed && (
-        <Link to={`/orders/${order._id}/review`}>
-          <Button className="w-full">Leave a review</Button>
-        </Link>
-      )}
+      <ReviewForm
+        orderId={order._id}
+        storeId={order.storeId?._id || order.storeId}
+        onSubmitted={() => {
+          toast.success('Thanks for the review!');
+          navigate('/orders');
+        }}
+      />
     </div>
   );
 }
