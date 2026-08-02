@@ -78,15 +78,18 @@ export default function AIShoppingAssistant() {
     }
   };
 
-  const handleAddCluster = (cluster) => {
+  const handleAddCluster = (cluster, chosenProducts) => {
     let added = 0;
-    cluster.productMatches
-      ?.filter((p) => p.available)
-      .forEach((p) => {
-        const product = p.products[0];
-        addItem(product, product.storeId?._id || product.storeId, product.storeId?.storeName || cluster.stores[0]?.storeName, p.requestedQuantity || 1);
-        added += 1;
-      });
+    (chosenProducts || []).forEach(({ match, product }) => {
+      if (!product) return;
+      addItem(
+        product,
+        product.storeId?._id || product.storeId,
+        product.storeId?.storeName || cluster.stores[0]?.storeName,
+        match.requestedQuantity || 1
+      );
+      added += 1;
+    });
     toast.success(`Added ${added} item${added !== 1 ? 's' : ''} to your cart`);
   };
 
