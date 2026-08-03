@@ -64,24 +64,17 @@ export default function ClusterCard({ cluster, isBest, onAddToCart }) {
         <ClusterScore cluster={cluster} />
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-1.5">
-        {cluster.stores?.map((s) => (
-          <span
-            key={s._id}
-            className="text-xs bg-elevated border border-border px-2.5 py-1 rounded-full text-text-secondary"
-          >
-            {s.storeName}
-          </span>
-        ))}
-      </div>
-
-      {/* Matched products — pick a brand/store when more than one option carries an item */}
+      {/* Matched products — the real item(s) found, with image, actual weight, store, and
+          price. When more than one store/brand carries an item, pick which one you want. */}
       {available.length > 0 && (
         <div className="mt-4 space-y-3">
           {available.map((match, i) => (
             <div key={i}>
-              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-1.5">
-                {match.requestedName} {match.requestedQuantity ? `(${match.requestedQuantity}${match.requestedUnit !== 'piece' ? match.requestedUnit : ''})` : ''}
+              <p className="text-xs text-text-muted mb-1.5">
+                You asked for: <span className="font-medium text-text-secondary">{match.requestedName}</span>
+                {match.products.length > 1 && (
+                  <span className="ml-1">• {match.products.length} options found, pick one</span>
+                )}
               </p>
               <div className="space-y-1.5">
                 {match.products.map((product) => {
@@ -91,27 +84,38 @@ export default function ClusterCard({ cluster, isBest, onAddToCart }) {
                     <button
                       key={product._id}
                       onClick={() => hasChoice && setSelections((prev) => ({ ...prev, [i]: product._id }))}
-                      className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg border text-left transition-colors ${
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-colors ${
                         isSelected ? 'border-accent bg-accent-soft' : 'border-border'
                       } ${hasChoice ? 'cursor-pointer hover:border-accent/50' : 'cursor-default'}`}
                     >
-                      <span className="flex items-center gap-2 min-w-0">
-                        {hasChoice && (
-                          <span
-                            className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                              isSelected ? 'border-accent bg-accent' : 'border-border-strong'
-                            }`}
-                          >
-                            {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
-                          </span>
+                      {hasChoice && (
+                        <span
+                          className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                            isSelected ? 'border-accent bg-accent' : 'border-border-strong'
+                          }`}
+                        >
+                          {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
+                        </span>
+                      )}
+
+                      <div className="w-11 h-11 rounded-lg bg-surface flex items-center justify-center text-lg flex-shrink-0 overflow-hidden">
+                        {product.images?.[0] ? (
+                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                        ) : (
+                          '🛍️'
                         )}
-                        <span className="min-w-0">
-                          <span className="block text-sm font-medium text-text-primary truncate">{product.name}</span>
-                          <span className="flex items-center gap-1 text-xs text-text-muted">
+                      </div>
+
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-medium text-text-primary truncate">{product.name}</span>
+                        <span className="flex items-center gap-2 text-xs text-text-muted">
+                          <span className="font-nums">{product.unit}</span>
+                          <span className="inline-flex items-center gap-1">
                             <Store className="w-3 h-3" /> {product.storeId?.storeName || 'Store'}
                           </span>
                         </span>
                       </span>
+
                       <span className="font-nums font-semibold text-sm text-text-primary flex-shrink-0">
                         {formatPrice(product.price)}
                       </span>
