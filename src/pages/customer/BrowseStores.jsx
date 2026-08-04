@@ -5,6 +5,7 @@ import L from 'leaflet';
 import StoreCard from '../../components/store/StoreCard';
 import VerifiedBadge from '../../components/store/VerifiedBadge';
 import EmptyState from '../../components/common/EmptyState';
+import FadeIn from '../../components/common/FadeIn';
 import { useUserLocation } from '../../hooks/useLocation';
 import { getNearbyStores } from '../../services/storeService';
 import { formatDistance } from '../../utils/geoUtils';
@@ -100,8 +101,10 @@ export default function BrowseStores() {
         />
       ) : view === 'grid' ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {filtered.map((s) => (
-            <StoreCard key={s._id} store={s} />
+          {filtered.map((s, i) => (
+            <FadeIn key={s._id} delay={Math.min(i, 8) * 0.05}>
+              <StoreCard store={s} />
+            </FadeIn>
           ))}
         </div>
       ) : (

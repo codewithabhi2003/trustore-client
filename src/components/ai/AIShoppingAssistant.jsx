@@ -6,6 +6,7 @@ import ExtractedProductsList from './ExtractedProductsList';
 import AITypingIndicator from './AITypingIndicator';
 import ClusterCard from '../cluster/ClusterCard';
 import EmptyState from '../common/EmptyState';
+import FadeIn from '../common/FadeIn';
 import { extractProducts } from '../../services/aiService';
 import { findBestCluster } from '../../services/clusterService';
 import { useUserLocation } from '../../hooks/useLocation';
@@ -164,9 +165,13 @@ export default function AIShoppingAssistant() {
               />
             ) : (
               <>
-                <ClusterCard cluster={result.bestCluster} isBest onAddToCart={handleAddCluster} />
-                {result.allClusters?.slice(1, 3).map((c) => (
-                  <ClusterCard key={c.clusterId} cluster={c} onAddToCart={handleAddCluster} />
+                <FadeIn>
+                  <ClusterCard cluster={result.bestCluster} isBest onAddToCart={handleAddCluster} />
+                </FadeIn>
+                {result.allClusters?.slice(1, 3).map((c, i) => (
+                  <FadeIn key={c.clusterId} delay={(i + 1) * 0.1}>
+                    <ClusterCard cluster={c} onAddToCart={handleAddCluster} />
+                  </FadeIn>
                 ))}
               </>
             )}
