@@ -49,10 +49,10 @@ export default function Home() {
 
   return (
     <div>
-      {/* Hero — full viewport height, dark on every theme for a strong first impression */}
-      <section className="relative min-h-screen flex items-center overflow-hidden bg-[#080B14]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(0,200,150,0.18),transparent_45%),radial-gradient(circle_at_80%_60%,rgba(0,150,255,0.10),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
+      {/* Hero — full viewport height including behind the floating navbar; colors follow
+          the site's light/dark theme instead of being hardcoded dark. */}
+      <section className="relative -mt-16 min-h-screen flex items-center overflow-hidden bg-base">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(0,200,150,0.14),transparent_45%),radial-gradient(circle_at_80%_60%,rgba(0,150,255,0.08),transparent_50%)]" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24 relative grid lg:grid-cols-2 gap-16 items-center w-full">
           {/* Left — copy */}
@@ -68,7 +68,7 @@ export default function Home() {
               {['AI-Powered', 'Local', 'Verified'].map((tag) => (
                 <span
                   key={tag}
-                  className="text-xs font-semibold text-accent bg-white/5 border border-accent/30 px-3 py-1.5 rounded-full"
+                  className="text-xs font-semibold text-accent bg-accent-soft border border-accent/30 px-3 py-1.5 rounded-full"
                 >
                   {tag}
                 </span>
@@ -77,10 +77,10 @@ export default function Home() {
 
             <motion.h1
               variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }}
-              className="text-4xl sm:text-6xl font-heading font-extrabold leading-[1.05] text-white"
+              className="text-4xl sm:text-6xl font-heading font-extrabold leading-[1.05] text-text-primary"
             >
               Shop only from{' '}
-              <span className="bg-gradient-to-r from-accent to-emerald-300 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-accent to-emerald-400 bg-clip-text text-transparent">
                 trusted local stores
               </span>
               .
@@ -88,7 +88,7 @@ export default function Home() {
 
             <motion.p
               variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }}
-              className="text-white/60 text-lg mt-6 max-w-lg"
+              className="text-text-secondary text-lg mt-6 max-w-lg"
             >
               Tell Trustore what you need in plain language. We match you to the best cluster of
               admin-verified stores near you — no scrolling through catalogs.
@@ -104,7 +104,7 @@ export default function Home() {
                 </Button>
               </Link>
               <Link to="/stores">
-                <Button variant="onDark" size="lg">
+                <Button variant="secondary" size="lg">
                   Browse stores
                 </Button>
               </Link>
@@ -116,10 +116,10 @@ export default function Home() {
             >
               {heroFeatures.map((f) => (
                 <div key={f.label} className="flex flex-col gap-2">
-                  <div className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-lg bg-elevated border border-border flex items-center justify-center">
                     <f.icon className="w-4 h-4 text-accent" />
                   </div>
-                  <span className="text-xs text-white/50 leading-snug">{f.label}</span>
+                  <span className="text-xs text-text-muted leading-snug">{f.label}</span>
                 </div>
               ))}
             </motion.div>
@@ -132,25 +132,25 @@ export default function Home() {
             transition={{ duration: 0.7, delay: 0.2, ease: 'easeOut' }}
             className="relative hidden lg:block"
           >
-            <div className="relative bg-white/[0.03] border border-white/10 rounded-3xl p-6 backdrop-blur-sm shadow-2xl">
-              <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white/70 mb-4">
+            <div className="relative bg-elevated border border-border rounded-3xl p-6 shadow-2xl">
+              <div className="bg-input border border-border rounded-2xl px-4 py-3 text-sm text-text-secondary mb-4">
                 I need rice, dal, milk, eggs, bread, and some fruits
               </div>
 
-              <div className="relative rounded-2xl border border-accent/40 bg-[#0c1120] p-4 shadow-[0_0_40px_rgba(0,200,150,0.15)]">
+              <div className="relative rounded-2xl border border-accent/40 bg-card p-4 shadow-glow">
                 <div className="inline-flex items-center gap-1.5 bg-accent text-[#08150f] text-[11px] font-bold px-2.5 py-1 rounded-full mb-3">
                   <Trophy className="w-3 h-3" /> Best match
                 </div>
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <p className="text-white font-heading font-bold text-sm">Cluster A</p>
-                    <p className="text-white/40 text-xs mt-0.5">6 of 6 products • 300m away</p>
+                    <p className="text-text-primary font-heading font-bold text-sm">Cluster A</p>
+                    <p className="text-text-muted text-xs mt-0.5">6 of 6 products • 300m away</p>
                   </div>
                   <span className="text-2xl font-nums font-extrabold text-accent">97</span>
                 </div>
                 <div className="space-y-1.5">
                   {[100, 94, 93].map((v, i) => (
-                    <div key={i} className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                    <div key={i} className="h-1.5 rounded-full bg-input overflow-hidden">
                       <div className="h-full bg-accent rounded-full" style={{ width: `${v}%` }} />
                     </div>
                   ))}
