@@ -36,7 +36,7 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-base/80 backdrop-blur-md border-b border-border">
+    <header className="fixed top-0 inset-x-0 z-50 bg-base/80 backdrop-blur-md border-b border-border">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 font-heading font-extrabold text-xl">
           <span className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white text-sm">
@@ -197,4 +197,3 @@ export default function Navbar() {
     </header>
   );
 }
-
