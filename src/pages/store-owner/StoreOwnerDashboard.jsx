@@ -101,7 +101,9 @@ export default function StoreOwnerDashboard() {
                 </span>
               </p>
               <p className="text-xs text-text-muted">
-                {store?.isOpen ? 'Customers see you as open for orders.' : 'Still listed, but shown as closed to customers.'}
+                {store?.isOpen
+                  ? 'Customers can find you in Browse Stores and the AI assistant.'
+                  : "Hidden from Browse Stores and the AI assistant until you're open again."}
               </p>
             </div>
           </div>
