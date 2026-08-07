@@ -47,6 +47,14 @@ export default function StoreDetail() {
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-2xl font-heading font-bold text-text-primary">{store.storeName}</h1>
             <VerifiedBadge size="md" />
+            <span
+              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
+                store.isOpen !== false ? 'bg-accent/10 text-accent' : 'bg-input text-text-muted'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${store.isOpen !== false ? 'bg-accent' : 'bg-text-muted'}`} />
+              {store.isOpen !== false ? 'Open' : 'Closed'}
+            </span>
           </div>
           <p className="text-sm text-text-secondary">
             {store.category} &nbsp;•&nbsp; {store.address?.fullAddress || store.address?.city}
