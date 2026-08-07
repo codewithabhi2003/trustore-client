@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, ShoppingBag, Wallet, Star, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Package, ShoppingBag, Wallet, Star, AlertCircle, Store } from 'lucide-react';
 import Loader from '../../components/common/Loader';
 import Button from '../../components/common/Button';
 import OrderStatusBadge from '../../components/order/OrderStatusBadge';
 import api from '../../services/api';
+import { toggleStoreOpen } from '../../services/storeService';
 import { formatPrice } from '../../utils/formatPrice';
 import { formatDate } from '../../utils/formatDate';
 
@@ -14,10 +16,27 @@ const statusStyles = {
   rejected: { label: 'Rejected', color: 'bg-accent-red/10 text-accent-red' },
 };
 
+function Toggle({ checked, onChange }) {
+  return (
+    <button
+      onClick={onChange}
+      className={`relative w-11 h-6 rounded-full transition-colors ${checked ? 'bg-accent' : 'bg-input'}`}
+      aria-pressed={checked}
+    >
+      <span
+        className={`absolute left-0.5 top-1/2 w-5 h-5 rounded-full bg-white shadow-sm transition-transform -translate-y-1/2 ${
+          checked ? 'translate-x-5' : 'translate-x-0'
+        }`}
+      />
+    </button>
+  );
+}
+
 export default function StoreOwnerDashboard() {
   const [store, setStore] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [togglingOpen, setTogglingOpen] = useState(false);
 
   useEffect(() => {
     Promise.all([api.get('/stores/my-store'), api.get('/orders/store-orders')])
@@ -28,6 +47,19 @@ export default function StoreOwnerDashboard() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const handleToggleOpen = async () => {
+    setTogglingOpen(true);
+    try {
+      const { data } = await toggleStoreOpen();
+      setStore(data.store);
+      toast.success(data.store.isOpen ? 'Your store is now shown as open' : 'Your store is now shown as closed');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not update your store status.');
+    } finally {
+      setTogglingOpen(false);
+    }
+  };
 
   if (loading) return <Loader fullScreen label="Loading your dashboard..." />;
 
@@ -43,7 +75,7 @@ export default function StoreOwnerDashboard() {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
       <h1 className="text-2xl font-heading font-bold text-text-primary mb-6">Store dashboard</h1>
 
-      <div className={`rounded-card p-4 mb-6 flex items-center justify-between ${statusStyles[status].color}`}>
+      <div className={`rounded-card p-4 mb-4 flex items-center justify-between ${statusStyles[status].color}`}>
         <span className="text-sm font-semibold">{statusStyles[status].label}</span>
         {status === 'rejected' && (
           <div className="text-right">
@@ -54,6 +86,28 @@ export default function StoreOwnerDashboard() {
           </div>
         )}
       </div>
+
+      {status === 'approved' && (
+        <div className="bg-card border border-border rounded-card shadow-sm p-4 mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${store?.isOpen ? 'bg-accent/10' : 'bg-input'}`}>
+              <Store className={`w-4 h-4 ${store?.isOpen ? 'text-accent' : 'text-text-muted'}`} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-text-primary">
+                Store is currently{' '}
+                <span className={store?.isOpen ? 'text-accent font-semibold' : 'text-text-muted font-semibold'}>
+                  {store?.isOpen ? 'Open' : 'Closed'}
+                </span>
+              </p>
+              <p className="text-xs text-text-muted">
+                {store?.isOpen ? 'Customers see you as open for orders.' : 'Still listed, but shown as closed to customers.'}
+              </p>
+            </div>
+          </div>
+          <Toggle checked={!!store?.isOpen} onChange={handleToggleOpen} disabled={togglingOpen} />
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {stats.map((s) => (
