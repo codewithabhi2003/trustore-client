@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trophy, MapPin, AlertTriangle, Sparkles, Check, Store } from 'lucide-react';
+import { Trophy, MapPin, AlertTriangle, Sparkles, Check, Store, Tag } from 'lucide-react';
 import ClusterScore from './ClusterScore';
 import Button from '../common/Button';
 import { formatDistance } from '../../utils/geoUtils';
@@ -7,10 +7,15 @@ import { formatPrice } from '../../utils/formatPrice';
 
 export default function ClusterCard({ cluster, isBest, onAddToCart }) {
   const missing = cluster.productMatches?.filter((p) => !p.available) ?? [];
-  const available = cluster.productMatches?.filter((p) => p.available) ?? [];
+  // Price comparison: sort each item's matched products cheapest-first, so the default
+  // selection is the best price and the savings vs. the priciest option are obvious.
+  const available = (cluster.productMatches?.filter((p) => p.available) ?? []).map((match) => ({
+    ...match,
+    products: [...match.products].sort((a, b) => a.price - b.price),
+  }));
 
   // Which specific product (brand/store) is chosen for each requested item, when more
-  // than one match exists — defaults to the first match for every item.
+  // than one match exists — defaults to the cheapest match for every item.
   const [selections, setSelections] = useState(() =>
     Object.fromEntries(available.map((p, i) => [i, p.products[0]?._id]))
   );
@@ -65,66 +70,86 @@ export default function ClusterCard({ cluster, isBest, onAddToCart }) {
       </div>
 
       {/* Matched products — the real item(s) found, with image, actual weight, store, and
-          price. When more than one store/brand carries an item, pick which one you want. */}
+          price. When more than one store/brand carries an item, they're sorted cheapest
+          first so you can compare prices and pick which one you want. */}
       {available.length > 0 && (
         <div className="mt-4 space-y-3">
-          {available.map((match, i) => (
-            <div key={i}>
-              <p className="text-xs text-text-muted mb-1.5">
-                You asked for: <span className="font-medium text-text-secondary">{match.requestedName}</span>
-                {match.products.length > 1 && (
-                  <span className="ml-1">• {match.products.length} options found, pick one</span>
-                )}
-              </p>
-              <div className="space-y-1.5">
-                {match.products.map((product) => {
-                  const isSelected = selections[i] === product._id;
-                  const hasChoice = match.products.length > 1;
-                  return (
-                    <button
-                      key={product._id}
-                      onClick={() => hasChoice && setSelections((prev) => ({ ...prev, [i]: product._id }))}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-colors ${
-                        isSelected ? 'border-accent bg-accent-soft' : 'border-border'
-                      } ${hasChoice ? 'cursor-pointer hover:border-accent/50' : 'cursor-default'}`}
-                    >
-                      {hasChoice && (
-                        <span
-                          className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                            isSelected ? 'border-accent bg-accent' : 'border-border-strong'
-                          }`}
-                        >
-                          {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
-                        </span>
+          {available.map((match, i) => {
+            const hasChoice = match.products.length > 1;
+            const cheapest = match.products[0];
+            const priciest = match.products[match.products.length - 1];
+            const savings = hasChoice ? priciest.price - cheapest.price : 0;
+
+            return (
+              <div key={i}>
+                <p className="text-xs text-text-muted mb-1.5">
+                  You asked for: <span className="font-medium text-text-secondary">{match.requestedName}</span>
+                  {hasChoice && (
+                    <span className="ml-1">
+                      • {match.products.length} options, prices compared
+                      {savings > 0 && (
+                        <span className="text-accent font-medium"> — save up to {formatPrice(savings)}</span>
                       )}
-
-                      <div className="w-11 h-11 rounded-lg bg-surface flex items-center justify-center text-lg flex-shrink-0 overflow-hidden">
-                        {product.images?.[0] ? (
-                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
-                        ) : (
-                          '🛍️'
+                    </span>
+                  )}
+                </p>
+                <div className="space-y-1.5">
+                  {match.products.map((product, pi) => {
+                    const isSelected = selections[i] === product._id;
+                    const isCheapest = hasChoice && pi === 0;
+                    return (
+                      <button
+                        key={product._id}
+                        onClick={() => hasChoice && setSelections((prev) => ({ ...prev, [i]: product._id }))}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-colors ${
+                          isSelected ? 'border-accent bg-accent-soft' : 'border-border'
+                        } ${hasChoice ? 'cursor-pointer hover:border-accent/50' : 'cursor-default'}`}
+                      >
+                        {hasChoice && (
+                          <span
+                            className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                              isSelected ? 'border-accent bg-accent' : 'border-border-strong'
+                            }`}
+                          >
+                            {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
+                          </span>
                         )}
-                      </div>
 
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-medium text-text-primary truncate">{product.name}</span>
-                        <span className="flex items-center gap-2 text-xs text-text-muted">
-                          <span className="font-nums">{product.unit}</span>
-                          <span className="inline-flex items-center gap-1">
-                            <Store className="w-3 h-3" /> {product.storeId?.storeName || 'Store'}
+                        <div className="w-11 h-11 rounded-lg bg-surface flex items-center justify-center text-lg flex-shrink-0 overflow-hidden">
+                          {product.images?.[0] ? (
+                            <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                          ) : (
+                            '🛍️'
+                          )}
+                        </div>
+
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-1.5">
+                            <span className="block text-sm font-medium text-text-primary truncate">{product.name}</span>
+                            {isCheapest && (
+                              <span className="inline-flex items-center gap-0.5 bg-accent/15 text-accent text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0">
+                                <Tag className="w-2.5 h-2.5" /> Best price
+                              </span>
+                            )}
+                          </span>
+                          <span className="flex items-center gap-2 text-xs text-text-muted">
+                            <span className="font-nums">{product.unit}</span>
+                            <span className="inline-flex items-center gap-1">
+                              <Store className="w-3 h-3" /> {product.storeId?.storeName || 'Store'}
+                            </span>
                           </span>
                         </span>
-                      </span>
 
-                      <span className="font-nums font-semibold text-sm text-text-primary flex-shrink-0">
-                        {formatPrice(product.price)}
-                      </span>
-                    </button>
-                  );
-                })}
+                        <span className="font-nums font-semibold text-sm text-text-primary flex-shrink-0">
+                          {formatPrice(product.price)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
