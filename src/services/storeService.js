@@ -11,3 +11,5 @@ export const registerStore = (formData) =>
   api.post('/stores/register', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 
 export const toggleStoreOpen = () => api.patch('/stores/my-store/toggle-open');
+
+export const getDemandInsights = () => api.get('/stores/my-store/demand-insights');
