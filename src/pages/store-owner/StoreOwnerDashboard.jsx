@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Package, ShoppingBag, Wallet, Star, AlertCircle, Store } from 'lucide-react';
+import { Package, ShoppingBag, Wallet, Star, AlertCircle, Store, TrendingUp } from 'lucide-react';
 import Loader from '../../components/common/Loader';
 import Button from '../../components/common/Button';
 import OrderStatusBadge from '../../components/order/OrderStatusBadge';
 import api from '../../services/api';
-import { toggleStoreOpen } from '../../services/storeService';
+import { toggleStoreOpen, getDemandInsights } from '../../services/storeService';
 import { formatPrice } from '../../utils/formatPrice';
 import { formatDate } from '../../utils/formatDate';
 
@@ -35,14 +35,16 @@ function Toggle({ checked, onChange }) {
 export default function StoreOwnerDashboard() {
   const [store, setStore] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [insights, setInsights] = useState([]);
   const [loading, setLoading] = useState(true);
   const [togglingOpen, setTogglingOpen] = useState(false);
 
   useEffect(() => {
-    Promise.all([api.get('/stores/my-store'), api.get('/orders/store-orders')])
-      .then(([storeRes, orderRes]) => {
+    Promise.all([api.get('/stores/my-store'), api.get('/orders/store-orders'), getDemandInsights()])
+      .then(([storeRes, orderRes, insightsRes]) => {
         setStore(storeRes.data.store || storeRes.data);
         setOrders(orderRes.data.orders || orderRes.data || []);
+        setInsights(insightsRes.data.insights || []);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -126,6 +128,34 @@ export default function StoreOwnerDashboard() {
         <Link to="/store-owner/orders"><Button size="sm" variant="secondary">View all orders</Button></Link>
         <Link to="/store-owner/analytics"><Button size="sm" variant="secondary">Sales analytics</Button></Link>
       </div>
+
+      {status === 'approved' && insights.length > 0 && (
+        <div className="bg-card border border-border rounded-card shadow-sm p-5 mb-8">
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingUp className="w-4 h-4 text-accent" />
+            <h2 className="text-sm font-semibold text-text-primary">Local demand — you don't stock these yet</h2>
+          </div>
+          <p className="text-xs text-text-muted mb-4">
+            From AI shopping searches near you in the last 30 days.
+          </p>
+          <div className="space-y-2">
+            {insights.map((item) => (
+              <div key={item.itemName} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-surface">
+                <div>
+                  <span className="text-sm font-medium text-text-primary capitalize">{item.itemName}</span>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    Searched {item.searchCount} time{item.searchCount !== 1 ? 's' : ''} nearby
+                    {item.fulfilledElsewhere > 0 && ` • ${item.fulfilledElsewhere} went to another store`}
+                  </p>
+                </div>
+                <Link to="/store-owner/products">
+                  <Button size="sm" variant="ghost">List it →</Button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <h2 className="text-lg font-heading font-bold text-text-primary mb-4">Recent orders</h2>
       {orders.length === 0 ? (
