@@ -94,6 +94,11 @@ export default function AIShoppingAssistant() {
     toast.success(`Added ${added} item${added !== 1 ? 's' : ''} to your cart`);
   };
 
+  const handleAddSubstitute = (product) => {
+    addItem(product, product.storeId?._id || product.storeId, product.storeId?.storeName, 1);
+    toast.success(`${product.name} added to cart`);
+  };
+
   return (
     <div className="grid lg:grid-cols-2 gap-8 items-start">
       {/* Left — input panel */}
@@ -166,11 +171,16 @@ export default function AIShoppingAssistant() {
             ) : (
               <>
                 <FadeIn>
-                  <ClusterCard cluster={result.bestCluster} isBest onAddToCart={handleAddCluster} />
+                  <ClusterCard
+                    cluster={result.bestCluster}
+                    isBest
+                    onAddToCart={handleAddCluster}
+                    onAddSubstitute={handleAddSubstitute}
+                  />
                 </FadeIn>
                 {result.allClusters?.slice(1, 3).map((c, i) => (
                   <FadeIn key={c.clusterId} delay={(i + 1) * 0.1}>
-                    <ClusterCard cluster={c} onAddToCart={handleAddCluster} />
+                    <ClusterCard cluster={c} onAddToCart={handleAddCluster} onAddSubstitute={handleAddSubstitute} />
                   </FadeIn>
                 ))}
               </>
