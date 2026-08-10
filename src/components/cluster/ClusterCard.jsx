@@ -5,7 +5,7 @@ import Button from '../common/Button';
 import { formatDistance } from '../../utils/geoUtils';
 import { formatPrice } from '../../utils/formatPrice';
 
-export default function ClusterCard({ cluster, isBest, onAddToCart }) {
+export default function ClusterCard({ cluster, isBest, onAddToCart, onAddSubstitute }) {
   const missing = cluster.productMatches?.filter((p) => !p.available) ?? [];
   // Price comparison: sort each item's matched products cheapest-first, so the default
   // selection is the best price and the savings vs. the priciest option are obvious.
@@ -169,6 +169,48 @@ export default function ClusterCard({ cluster, isBest, onAddToCart }) {
                 .filter((v, i, a) => a.indexOf(v) === i)
                 .join(', ')}
             </p>
+          )}
+
+          {missing.map((m) =>
+            cluster.substitutes?.[m.requestedName] ? (
+              <div key={m.requestedName} className="mt-3 pt-3 border-t border-accent-yellow/20">
+                <p className="text-xs text-text-secondary mb-1.5">
+                  No "{m.requestedName}" — try instead:
+                </p>
+                <div className="space-y-1.5">
+                  {cluster.substitutes[m.requestedName].map((sub) => (
+                    <div
+                      key={sub._id}
+                      className="flex items-center gap-2.5 bg-card border border-border rounded-lg px-2.5 py-2"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-surface flex items-center justify-center text-base flex-shrink-0 overflow-hidden">
+                        {sub.images?.[0] ? (
+                          <img src={sub.images[0]} alt={sub.name} className="w-full h-full object-cover" />
+                        ) : (
+                          '🛍️'
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-text-primary truncate">{sub.name}</p>
+                        <p className="text-[10px] text-text-muted">
+                          {sub.unit} • {sub.storeId?.storeName}
+                        </p>
+                      </div>
+                      <span className="font-nums font-semibold text-xs text-text-primary flex-shrink-0">
+                        {formatPrice(sub.price)}
+                      </span>
+                      <button
+                        onClick={() => onAddSubstitute?.(sub)}
+                        className="w-6 h-6 rounded-full bg-accent text-white flex items-center justify-center hover:bg-accent-dark transition-colors flex-shrink-0"
+                        aria-label={`Add ${sub.name} to cart`}
+                      >
+                        +
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null
           )}
         </div>
       )}
