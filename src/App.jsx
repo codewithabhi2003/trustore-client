@@ -31,6 +31,7 @@ const StoreRegister = lazy(() => import('./pages/store-owner/StoreRegister'));
 const StoreOwnerDashboard = lazy(() => import('./pages/store-owner/StoreOwnerDashboard'));
 const ManageProducts = lazy(() => import('./pages/store-owner/ManageProducts'));
 const ManageOrders = lazy(() => import('./pages/store-owner/ManageOrders'));
+const DemandInsights = lazy(() => import('./pages/store-owner/DemandInsights'));
 const SalesAnalytics = lazy(() => import('./pages/store-owner/SalesAnalytics'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -168,7 +169,16 @@ export default function App() {
                   <ManageOrders />
                 </ProtectedRoute>
               }
+
             />
+            <Route
+  path="/store-owner/demand-insights"
+  element={
+    <ProtectedRoute roles={['storeOwner']}>
+      <DemandInsights />
+    </ProtectedRoute>
+  }
+/>
             <Route
               path="/store-owner/analytics"
               element={
