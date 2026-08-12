@@ -1,38 +1,81 @@
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
 
-export default function Modal({ open, onClose, title, children, maxWidth = 'max-w-lg' }) {
+export default function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  maxWidth = 'max-w-lg',
+}) {
   useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && onClose?.();
-    if (open) document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        onClose?.();
+      }
+    };
+
+    if (open) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
   }, [open, onClose]);
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
+      role="presentation"
+    >
+      {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={onClose}
         aria-hidden="true"
       />
+
+      {/* Modal */}
       <div
-        className={`relative w-full ${maxWidth} bg-card border border-border rounded-card shadow-lg p-6 animate-in fade-in zoom-in-95 duration-200`}
+        className={`relative w-full ${maxWidth} max-h-[90vh] overflow-y-auto bg-card border border-border rounded-2xl shadow-lg animate-in fade-in zoom-in-95 duration-200`}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={title ? 'modal-title' : undefined}
       >
-        <div className="flex items-center justify-between mb-4">
-          {title && <h3 className="text-lg font-heading font-bold text-text-primary">{title}</h3>}
-          <button
-            onClick={onClose}
-            className="ml-auto p-1 rounded-lg text-text-muted hover:bg-elevated hover:text-text-primary transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
+        {/* Header */}
+        {(title || onClose) && (
+          <div className="flex items-center justify-between gap-4 px-6 pt-5 pb-4 border-b border-border">
+            {title ? (
+              <h3
+                id="modal-title"
+                className="text-lg font-heading font-bold text-text-primary"
+              >
+                {title}
+              </h3>
+            ) : (
+              <span />
+            )}
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full text-text-muted hover:bg-elevated hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="p-6">
+          {children}
         </div>
-        {children}
       </div>
     </div>
   );
