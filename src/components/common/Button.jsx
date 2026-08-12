@@ -2,15 +2,19 @@ import { Loader2 } from 'lucide-react';
 
 const variants = {
   primary:
-    'bg-accent text-white hover:bg-accent-dark hover:scale-[1.03] shadow-sm rounded-full',
+    'bg-accent text-white hover:bg-accent-dark hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md rounded-full',
+
   secondary:
-    'border-2 border-accent text-text-primary bg-transparent hover:bg-accent-soft rounded-full',
-  // For use on dark backgrounds (e.g. the hero) — a separate explicit variant rather
-  // than a className override, so it can never silently end up as dark-on-dark.
+    'border-2 border-accent text-text-primary bg-transparent hover:bg-accent-soft hover:scale-[1.02] active:scale-[0.98] rounded-full',
+
   onDark:
-    'border-2 border-white/70 text-white bg-transparent hover:bg-white/10 rounded-full',
-  ghost: 'bg-transparent text-text-secondary hover:bg-elevated rounded-lg',
-  danger: 'bg-accent-red text-white hover:brightness-110 rounded-full',
+    'border-2 border-white/80 text-white bg-white/5 hover:bg-white/15 hover:border-white hover:scale-[1.02] active:scale-[0.98] backdrop-blur-sm rounded-full',
+
+  ghost:
+    'bg-transparent text-text-secondary hover:bg-elevated hover:text-text-primary rounded-lg',
+
+  danger:
+    'bg-accent-red text-white hover:brightness-110 hover:scale-[1.02] active:scale-[0.98] shadow-sm rounded-full',
 };
 
 const sizes = {
@@ -30,7 +34,7 @@ export default function Button({
 }) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 font-semibold font-body transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 font-semibold font-body transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50 disabled:pointer-events-none ${variants[variant]} ${sizes[size]} ${className}`}
       disabled={disabled || loading}
       {...props}
     >
