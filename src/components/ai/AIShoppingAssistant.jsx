@@ -20,29 +20,41 @@ const STEP = {
   RESULTS: 'results',
 };
 
-const MIN_DISPLAY_MS = 1500; // keep the "AI is thinking" state visible for at least this long
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const MIN_DISPLAY_MS = 1500;
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function AIShoppingAssistant() {
   const [text, setText] = useState('');
   const [step, setStep] = useState(STEP.IDLE);
   const [products, setProducts] = useState([]);
   const [result, setResult] = useState(null);
+
   const lastSubmitRef = useRef(0);
+
   const { coords, permission, requesting, requestLocation } = useUserLocation();
   const { addItem } = useCart();
+
+  const isProcessing =
+    step === STEP.EXTRACTING ||
+    step === STEP.CLUSTERING ||
+    requesting;
 
   const handleSubmit = async () => {
     if (!text.trim()) {
       toast.error('Tell us what you need first');
       return;
     }
-    // 1s debounce to stay under Groq's free-tier rate limit
+
     const now = Date.now();
-    if (now - lastSubmitRef.current < 1000) return;
+
+    if (now - lastSubmitRef.current < 1000) {
+      return;
+    }
+
     lastSubmitRef.current = now;
 
     let location = coords;
+
     if (!location) {
       try {
         location = await requestLocation();
@@ -53,62 +65,135 @@ export default function AIShoppingAssistant() {
     }
 
     setResult(null);
+    setProducts([]);
     setStep(STEP.EXTRACTING);
+
     const started = Date.now();
 
     try {
+      /* Step 1 — Extract products */
       const { data } = await extractProducts(text);
-      const elapsed = Date.now() - started;
-      if (elapsed < MIN_DISPLAY_MS) await wait(MIN_DISPLAY_MS - elapsed);
 
-      setProducts(data.products || []);
+      const elapsed = Date.now() - started;
+
+      if (elapsed < MIN_DISPLAY_MS) {
+        await wait(MIN_DISPLAY_MS - elapsed);
+      }
+
+      const extractedProducts = data.products || [];
+
+      if (!extractedProducts.length) {
+        toast.error('I could not identify any products from your request.');
+        setStep(STEP.IDLE);
+        return;
+      }
+
+      setProducts(extractedProducts);
       setStep(STEP.EXTRACTED);
+
       await wait(600);
 
+      /* Step 2 — Find best store clusters */
       setStep(STEP.CLUSTERING);
+
       const clusterStarted = Date.now();
-      const { data: clusterData } = await findBestCluster(location.lat, location.lng, data.products);
+
+      const { data: clusterData } = await findBestCluster(
+        location.lat,
+        location.lng,
+        extractedProducts
+      );
+
       const clusterElapsed = Date.now() - clusterStarted;
-      if (clusterElapsed < 900) await wait(900 - clusterElapsed);
+
+      if (clusterElapsed < 900) {
+        await wait(900 - clusterElapsed);
+      }
 
       setResult(clusterData);
       setStep(STEP.RESULTS);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'AI extraction failed. Please try again.');
+      toast.error(
+        err.response?.data?.message ||
+          'AI shopping failed. Please try again.'
+      );
+
       setStep(STEP.IDLE);
     }
   };
 
   const handleAddCluster = (cluster, chosenProducts) => {
     let added = 0;
+
     (chosenProducts || []).forEach(({ match, product }) => {
       if (!product) return;
+
       addItem(
         product,
         product.storeId?._id || product.storeId,
-        product.storeId?.storeName || cluster.stores[0]?.storeName,
-        match.requestedQuantity || 1
+        product.storeId?.storeName ||
+          cluster.stores?.[0]?.storeName ||
+          'Local store',
+        match?.requestedQuantity || 1
       );
+
       added += 1;
     });
-    toast.success(`Added ${added} item${added !== 1 ? 's' : ''} to your cart`);
+
+    if (added > 0) {
+      toast.success(
+        `Added ${added} item${added !== 1 ? 's' : ''} to your cart`
+      );
+    }
   };
 
   const handleAddSubstitute = (product) => {
-    addItem(product, product.storeId?._id || product.storeId, product.storeId?.storeName, 1);
+    if (!product) return;
+
+    addItem(
+      product,
+      product.storeId?._id || product.storeId,
+      product.storeId?.storeName || 'Local store',
+      1
+    );
+
     toast.success(`${product.name} added to cart`);
   };
 
+  /*
+   * Keep exactly TWO cluster cards:
+   * 1. Best recommended cluster
+   * 2. Best alternative cluster
+   */
+  const clusters = result?.allClusters || [];
+
+  const bestCluster =
+    result?.bestCluster || clusters[0] || null;
+
+  const alternativeCluster =
+    clusters.find(
+      (cluster) =>
+        cluster.clusterId !== bestCluster?.clusterId
+    ) || null;
+
   return (
     <div className="grid lg:grid-cols-2 gap-8 items-start">
-      {/* Left — input panel */}
+
+      {/* LEFT — AI INPUT */}
       <div className="bg-card border border-border rounded-card shadow-sm p-6 lg:sticky lg:top-24">
+
         <div className="w-11 h-11 rounded-full bg-accent-soft flex items-center justify-center mb-4">
           <Sparkles className="w-5 h-5 text-accent" />
         </div>
-        <h2 className="text-xl font-heading font-bold text-text-primary">AI shopping assistant</h2>
+
+        <h2 className="text-xl font-heading font-bold text-text-primary">
+          AI shopping assistant
+        </h2>
+
         <p className="text-sm text-text-secondary mt-1.5 mb-4">
-          Tell it what you need, in your own words — it finds the best local stores for you.
+          Tell Trustore what you need in your own words. We'll understand
+          your list, find trusted nearby stores, and recommend the best
+          shopping option.
         </p>
 
         <textarea
@@ -116,73 +201,123 @@ export default function AIShoppingAssistant() {
           onChange={(e) => setText(e.target.value)}
           placeholder="I need 2kg rice, 1L milk, bread, tea, cooking oil..."
           rows={5}
-          className="w-full bg-input border border-border rounded-lg px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:border-accent outline-none resize-none"
+          disabled={isProcessing}
+          className="w-full bg-input border border-border rounded-lg px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:border-accent outline-none resize-none disabled:opacity-60"
         />
 
         {permission !== 'granted' && (
           <p className="text-xs text-text-muted mt-2 flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5" />
-            We'll ask for your location to match nearby stores.
+            We'll ask for your location to find trusted stores nearby.
           </p>
         )}
 
         <Button
           onClick={handleSubmit}
-          loading={step === STEP.EXTRACTING || step === STEP.CLUSTERING || requesting}
+          loading={isProcessing}
+          disabled={isProcessing}
           className="w-full mt-4"
         >
           <Search className="w-4 h-4" />
-          Find best stores
+          Find my best options
         </Button>
       </div>
 
-      {/* Right — results panel */}
+      {/* RIGHT — RESULTS */}
       <div className="min-h-[320px]">
+
+        {/* IDLE */}
         {step === STEP.IDLE && (
           <EmptyState
             icon={Sparkles}
-            title="Your matches will show up here"
-            description="Paste a grocery list on the left and we'll do the rest — extraction, matching, and scoring."
+            title="Your smart shopping results appear here"
+            description="Tell Trustore what you're looking for and we'll extract your list, compare nearby stores, and find the best combination for you."
           />
         )}
 
+        {/* EXTRACTING */}
         {step === STEP.EXTRACTING && (
-          <div className="bg-card border border-border rounded-card p-6">
-            <AITypingIndicator label="Understanding your list..." />
+          <div className="bg-card border border-border rounded-card shadow-sm p-6">
+
+            <AITypingIndicator
+              label="Understanding your shopping list..."
+            />
+
+            <p className="text-xs text-text-muted mt-4">
+              Identifying products, quantities, and units.
+            </p>
           </div>
         )}
 
+        {/* EXTRACTED / CLUSTERING */}
         {(step === STEP.EXTRACTED || step === STEP.CLUSTERING) && (
-          <div className="bg-card border border-border rounded-card p-6 space-y-4">
-            <ExtractedProductsList products={products} />
-            <AITypingIndicator label="Finding best store clusters near you..." />
+          <div className="bg-card border border-border rounded-card shadow-sm p-6 space-y-5">
+
+            <div>
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-3">
+                Your shopping list
+              </p>
+
+              <ExtractedProductsList products={products} />
+            </div>
+
+            {step === STEP.CLUSTERING && (
+              <div className="border-t border-border pt-4">
+                <AITypingIndicator
+                  label="Finding the best trusted stores near you..."
+                />
+              </div>
+            )}
           </div>
         )}
 
+        {/* RESULTS */}
         {step === STEP.RESULTS && result && (
           <div className="space-y-5">
-            <ExtractedProductsList products={products} />
+
+            <div className="bg-card border border-border rounded-card shadow-sm p-5">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-3">
+                Products understood
+              </p>
+
+              <ExtractedProductsList products={products} />
+            </div>
+
             {result.success === false ? (
-              <EmptyState
-                icon={MapPin}
-                title="No verified stores nearby"
-                description={result.message || 'Try a wider search radius or check back soon as more stores join.'}
-              />
+              <div className="bg-card border border-border rounded-card shadow-sm">
+                <EmptyState
+                  icon={MapPin}
+                  title="No verified stores nearby"
+                  description={
+                    result.message ||
+                    'Try a wider search radius or check back soon as more trusted stores join Trustore.'
+                  }
+                />
+              </div>
             ) : (
               <>
-                <FadeIn>
-                  <ClusterCard
-                    cluster={result.bestCluster}
-                    isBest
-                    onAddToCart={handleAddCluster}
-                    onAddSubstitute={handleAddSubstitute}
-                  />
-                </FadeIn>
-                {result.allClusters?.slice(1, 3).map((c, i) => (
-                  <FadeIn key={c.clusterId} delay={(i + 1) * 0.1}>
-                    <ClusterCard cluster={c} onAddToCart={handleAddCluster} onAddSubstitute={handleAddSubstitute} />
+                {/* BEST MATCH */}
+                {bestCluster && (
+                  <FadeIn>
+                    <ClusterCard
+                      cluster={bestCluster}
+                      isBest
+                      onAddToCart={handleAddCluster}
+                      onAddSubstitute={handleAddSubstitute}
+                    />
                   </FadeIn>
-                ))}
+                )}
+
+                {/* BEST ALTERNATIVE */}
+                {alternativeCluster && (
+                  <FadeIn delay={0.1}>
+                    <ClusterCard
+                      cluster={alternativeCluster}
+                      onAddToCart={handleAddCluster}
+                      onAddSubstitute={handleAddSubstitute}
+                    />
+                  </FadeIn>
+                )}
               </>
             )}
           </div>
