@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-:root[data-theme='light'] {
+:root {
   --bg-base: #ffffff;
   --bg-surface: #f8fafc;
   --bg-card: #ffffff;
@@ -19,7 +19,7 @@
 
   --text-primary: #0f172a;
   --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-muted: #64748b;
 
   --border: #e2e8f0;
   --border-strong: #cbd5e1;
@@ -30,7 +30,7 @@
   --shadow-glow: 0 0 24px rgba(0, 200, 150, 0.2);
 }
 
-:root[data-theme='dark'] {
+[data-theme="dark"] {
   --bg-base: #080b14;
   --bg-surface: #0f1521;
   --bg-card: #141c2e;
@@ -46,8 +46,8 @@
   --accent-orange: #fb923c;
 
   --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
 
   --border: rgba(255, 255, 255, 0.06);
   --border-strong: rgba(255, 255, 255, 0.12);
@@ -68,14 +68,23 @@ html {
 
 body {
   margin: 0;
+  min-width: 320px;
   background-color: var(--bg-base);
   color: var(--text-primary);
   font-family: 'DM Sans', sans-serif;
-  transition: background-color 250ms ease, color 250ms ease;
+  transition:
+    background-color 250ms ease,
+    color 250ms ease;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Syne', sans-serif;
 }
 
@@ -88,7 +97,6 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--accent-dark);
 }
 
-/* Visible keyboard focus everywhere */
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
@@ -98,8 +106,42 @@ select:focus-visible {
   outline-offset: 2px;
 }
 
+button,
+a,
+input,
+textarea,
+select {
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    opacity 150ms ease,
+    box-shadow 150ms ease;
+}
+
+img {
+  max-width: 100%;
+}
+
+button {
+  font-family: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
@@ -107,16 +149,67 @@ select:focus-visible {
   }
 }
 
-/* Leaflet marker div-icons should never inherit a border-radius fight */
+/* Leaflet */
 .leaflet-div-icon {
   background: transparent;
   border: none;
 }
 
+/* Hide scrollbar while keeping scrolling */
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Thin scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Smooth theme transition */
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+#root {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+/* Utility for guaranteed theme-aware text */
+.theme-text {
+  color: #000000;
+}
+
+[data-theme="dark"] .theme-text {
+  color: #ffffff;
+}
+
+/* Hero/supporting text */
+.hero-text {
+  color: #000000;
+}
+
+[data-theme="dark"] .hero-text {
+  color: #ffffff;
 }
