@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Package, User, MapPin, Phone } from 'lucide-react';
+import {
+  Package,
+  User,
+  MapPin,
+  Phone,
+  ArrowLeft,
+  ShoppingBag,
+  ChevronRight,
+  Clock3,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+
 import EmptyState from '../../components/common/EmptyState';
 import Loader from '../../components/common/Loader';
 import OrderStatusBadge from '../../components/order/OrderStatusBadge';
@@ -8,10 +19,16 @@ import api from '../../services/api';
 import { formatDate } from '../../utils/formatDate';
 import { formatPrice } from '../../utils/formatPrice';
 
-// Older orders were saved before fullAddress was reliably populated — fall back to
-// building a display string from the individual fields so those still show correctly.
 const formatAddress = (addr) =>
-  addr?.fullAddress || [addr?.street, addr?.city, addr?.state, addr?.pincode].filter(Boolean).join(', ');
+  addr?.fullAddress ||
+  [
+    addr?.street,
+    addr?.city,
+    addr?.state,
+    addr?.pincode,
+  ]
+    .filter(Boolean)
+    .join(', ');
 
 const NEXT_STATUS = {
   'Order Placed': 'Accepted',
@@ -23,92 +40,342 @@ const NEXT_STATUS = {
 export default function ManageOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
     api
       .get('/orders/store-orders')
-      .then((res) => setOrders(res.data.orders || res.data || []))
-      .catch(() => setOrders([]))
-      .finally(() => setLoading(false));
+      .then((res) => {
+        setOrders(res.data.orders || res.data || []);
+      })
+      .catch(() => {
+        setOrders([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
   const advanceStatus = async (order) => {
     const next = NEXT_STATUS[order.status];
-    if (!next) return;
+
+    if (!next || updatingId) return;
+
+    setUpdatingId(order._id);
+
     try {
-      await api.patch(`/orders/${order._id}/status`, { status: next });
-      setOrders((prev) => prev.map((o) => (o._id === order._id ? { ...o, status: next } : o)));
+      await api.patch(`/orders/${order._id}/status`, {
+        status: next,
+      });
+
+      setOrders((prev) =>
+        prev.map((item) =>
+          item._id === order._id
+            ? { ...item, status: next }
+            : item
+        )
+      );
+
       toast.success(`Order marked as ${next}`);
-    } catch {
-      toast.error('Could not update order status.');
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message ||
+          'Could not update order status.'
+      );
+    } finally {
+      setUpdatingId(null);
     }
   };
 
-  if (loading) return <Loader fullScreen label="Loading orders..." />;
+  if (loading) {
+    return (
+      <Loader
+        fullScreen
+        label="Loading orders..."
+      />
+    );
+  }
+
+  const activeOrders = orders.filter(
+    (order) =>
+      !['Completed', 'Cancelled'].includes(order.status)
+  ).length;
+
+  const completedOrders = orders.filter(
+    (order) => order.status === 'Completed'
+  ).length;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-      <h1 className="text-2xl font-heading font-bold text-text-primary mb-6">Manage orders</h1>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
+      {/* Back navigation */}
+      <Link
+        to="/store-owner/dashboard"
+        className="inline-flex items-center gap-1.5 text-xs font-medium text-text-muted hover:text-text-primary transition-colors mb-6"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        Back to dashboard
+      </Link>
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-7">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+              <ShoppingBag className="w-4 h-4 text-accent" />
+            </div>
+
+            <span className="text-xs font-semibold uppercase tracking-wide text-accent">
+              Store operations
+            </span>
+          </div>
+
+          <h1 className="text-2xl sm:text-3xl font-heading font-bold text-text-primary">
+            Manage orders
+          </h1>
+
+          <p className="text-sm text-text-muted mt-1.5 max-w-2xl">
+            Review customer orders and keep their status updated
+            throughout the fulfillment process.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-4 text-xs text-text-muted">
+          <span>
+            <span className="font-semibold text-text-primary">
+              {orders.length}
+            </span>{' '}
+            total
+          </span>
+
+          <span className="w-px h-3 bg-border" />
+
+          <span>
+            <span className="font-semibold text-text-primary">
+              {activeOrders}
+            </span>{' '}
+            active
+          </span>
+        </div>
+      </div>
+
+      {/* Summary */}
+      {orders.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+          <div className="bg-card border border-border rounded-card shadow-sm p-4">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center mb-3">
+              <ShoppingBag className="w-4 h-4 text-accent" />
+            </div>
+
+            <p className="text-xl font-nums font-extrabold text-text-primary">
+              {orders.length}
+            </p>
+
+            <p className="text-xs text-text-muted mt-0.5">
+              Total orders
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-card shadow-sm p-4">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center mb-3">
+              <Clock3 className="w-4 h-4 text-accent" />
+            </div>
+
+            <p className="text-xl font-nums font-extrabold text-text-primary">
+              {activeOrders}
+            </p>
+
+            <p className="text-xs text-text-muted mt-0.5">
+              Active orders
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-card shadow-sm p-4">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center mb-3">
+              <Package className="w-4 h-4 text-accent" />
+            </div>
+
+            <p className="text-xl font-nums font-extrabold text-text-primary">
+              {completedOrders}
+            </p>
+
+            <p className="text-xs text-text-muted mt-0.5">
+              Completed
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Orders */}
       {orders.length === 0 ? (
-        <EmptyState icon={Package} title="No orders yet" description="New orders from customers will show up here." />
+        <div className="bg-card border border-border rounded-card shadow-sm">
+          <EmptyState
+            icon={Package}
+            title="No orders yet"
+            description="New orders from customers will appear here."
+          />
+        </div>
       ) : (
         <div className="space-y-4">
-          {orders.map((o) => (
-            <div key={o._id} className="bg-card border border-border rounded-card shadow-sm p-4">
-              <div className="flex items-start justify-between flex-wrap gap-2 mb-3">
-                <div>
-                  <p className="text-sm font-semibold text-text-primary">#{o._id.slice(-6)}</p>
-                  <p className="text-xs text-text-muted flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    {formatDate(o.createdAt)}
-                    {o.customerId?.name && (
-                      <span className="inline-flex items-center gap-1">
-                        • <User className="w-3 h-3" /> {o.customerId.name}
-                      </span>
-                    )}
-                    {o.customerId?.phone && (
-                      <span className="inline-flex items-center gap-1">
-                        • <Phone className="w-3 h-3" /> {o.customerId.phone}
-                      </span>
-                    )}
-                  </p>
+
+          {orders.map((order) => {
+            const nextStatus = NEXT_STATUS[order.status];
+            const isUpdating = updatingId === order._id;
+            const address = formatAddress(
+              order.deliveryAddress
+            );
+
+            return (
+              <div
+                key={order._id}
+                className="bg-card border border-border rounded-card shadow-sm overflow-hidden"
+              >
+
+                {/* Order header */}
+                <div className="px-4 sm:px-5 py-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-sm font-semibold text-text-primary font-nums">
+                          #{order._id.slice(-6)}
+                        </h2>
+
+                        <span className="text-[10px] text-text-muted">
+                          Order
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-text-muted">
+                        <span>
+                          {formatDate(order.createdAt)}
+                        </span>
+
+                        {order.customerId?.name && (
+                          <span className="inline-flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            {order.customerId.name}
+                          </span>
+                        )}
+
+                        {order.customerId?.phone && (
+                          <a
+                            href={`tel:${order.customerId.phone}`}
+                            className="inline-flex items-center gap-1 hover:text-accent transition-colors"
+                          >
+                            <Phone className="w-3 h-3" />
+                            {order.customerId.phone}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    <OrderStatusBadge
+                      status={order.status}
+                    />
+                  </div>
                 </div>
-                <OrderStatusBadge status={o.status} />
-              </div>
 
-              <ul className="border-t border-b border-border py-3 space-y-1.5">
-                {o.items?.map((item, i) => (
-                  <li key={i} className="flex items-center justify-between text-sm">
-                    <span className="text-text-secondary">
-                      <span className="font-nums font-semibold text-text-primary">{item.quantity}×</span>{' '}
-                      {item.productName}
-                      {item.unit ? <span className="text-text-muted"> ({item.unit})</span> : null}
+                {/* Items */}
+                <div className="border-t border-border px-4 sm:px-5 py-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Package className="w-3.5 h-3.5 text-text-muted" />
+
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                      Order items
                     </span>
-                    <span className="font-nums text-text-muted">{formatPrice(item.price * item.quantity)}</span>
-                  </li>
-                ))}
-              </ul>
+                  </div>
 
-              {(o.deliveryAddress?.fullAddress || o.deliveryAddress?.street) && (
-                <p className="text-xs text-text-secondary flex items-start gap-1.5 pt-3">
-                  <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                  {formatAddress(o.deliveryAddress)}
-                </p>
-              )}
+                  <div className="space-y-2.5">
+                    {order.items?.map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between gap-4"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm text-text-secondary">
+                            <span className="font-nums font-semibold text-text-primary">
+                              {item.quantity}×
+                            </span>{' '}
+                            {item.productName}
+                          </p>
 
-              <div className="flex items-center justify-between flex-wrap gap-3 pt-3">
-                <span className="font-nums font-bold text-text-primary">Total: {formatPrice(o.totalAmount)}</span>
-                {NEXT_STATUS[o.status] && (
-                  <button
-                    onClick={() => advanceStatus(o)}
-                    className="text-xs font-semibold text-accent hover:text-accent-dark"
-                  >
-                    Mark as {NEXT_STATUS[o.status]} →
-                  </button>
+                          {item.unit && (
+                            <p className="text-[11px] text-text-muted mt-0.5">
+                              {item.unit}
+                            </p>
+                          )}
+                        </div>
+
+                        <span className="font-nums text-xs font-medium text-text-primary whitespace-nowrap">
+                          {formatPrice(
+                            (item.price || 0) *
+                              (item.quantity || 0)
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Delivery address */}
+                {address && (
+                  <div className="border-t border-border px-4 sm:px-5 py-4">
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center shrink-0">
+                        <MapPin className="w-3.5 h-3.5 text-text-muted" />
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                          Delivery address
+                        </p>
+
+                        <p className="text-xs text-text-secondary leading-relaxed mt-1">
+                          {address}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
+
+                {/* Footer */}
+                <div className="border-t border-border bg-surface/40 px-4 sm:px-5 py-3.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-text-muted">
+                        Order total
+                      </p>
+
+                      <p className="text-base font-nums font-bold text-text-primary mt-0.5">
+                        {formatPrice(order.totalAmount)}
+                      </p>
+                    </div>
+
+                    {nextStatus && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          advanceStatus(order)
+                        }
+                        disabled={isUpdating}
+                        className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-accent hover:text-accent-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {isUpdating
+                          ? 'Updating...'
+                          : `Mark as ${nextStatus}`}
+
+                        {!isUpdating && (
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
