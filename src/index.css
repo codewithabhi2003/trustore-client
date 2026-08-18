@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =========================================================
+   TRUSTORE THEME
+   ========================================================= */
+
 :root {
   --bg-base: #ffffff;
   --bg-surface: #f8fafc;
@@ -12,23 +16,39 @@
   --accent: #00c896;
   --accent-dark: #00a87a;
   --accent-soft: rgba(0, 200, 150, 0.1);
+
   --accent-yellow: #f59e0b;
   --accent-red: #ef4444;
   --accent-blue: #3b82f6;
   --accent-orange: #f97316;
 
+  /* Text */
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #64748b;
 
+  /* Borders */
   --border: #e2e8f0;
   --border-strong: #cbd5e1;
 
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 12px 40px rgba(15, 23, 42, 0.12);
-  --shadow-glow: 0 0 24px rgba(0, 200, 150, 0.2);
+  /* Shadows */
+  --shadow-sm:
+    0 1px 3px rgba(15, 23, 42, 0.06),
+    0 1px 2px rgba(15, 23, 42, 0.04);
+
+  --shadow-md:
+    0 4px 16px rgba(15, 23, 42, 0.08);
+
+  --shadow-lg:
+    0 12px 40px rgba(15, 23, 42, 0.12);
+
+  --shadow-glow:
+    0 0 24px rgba(0, 200, 150, 0.2);
 }
+
+/* =========================================================
+   DARK THEME
+   ========================================================= */
 
 [data-theme="dark"] {
   --bg-base: #080b14;
@@ -40,23 +60,38 @@
   --accent: #00d4aa;
   --accent-dark: #00b891;
   --accent-soft: rgba(0, 212, 170, 0.12);
+
   --accent-yellow: #fbbf24;
   --accent-red: #f87171;
   --accent-blue: #60a5fa;
   --accent-orange: #fb923c;
 
+  /* Text */
   --text-primary: #f1f5f9;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
 
-  --border: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.12);
+  /* Borders */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 24px rgba(0, 212, 170, 0.25);
+  /* Shadows */
+  --shadow-sm:
+    0 1px 3px rgba(0, 0, 0, 0.3);
+
+  --shadow-md:
+    0 4px 16px rgba(0, 0, 0, 0.4);
+
+  --shadow-lg:
+    0 12px 40px rgba(0, 0, 0, 0.5);
+
+  --shadow-glow:
+    0 0 24px rgba(0, 212, 170, 0.25);
 }
+
+/* =========================================================
+   BASE
+   ========================================================= */
 
 * {
   box-sizing: border-box;
@@ -64,20 +99,40 @@
 
 html {
   scroll-behavior: smooth;
+  min-height: 100%;
 }
 
 body {
   margin: 0;
   min-width: 320px;
+  min-height: 100vh;
+
   background-color: var(--bg-base);
   color: var(--text-primary);
-  font-family: 'DM Sans', sans-serif;
+
+  font-family: "DM Sans", sans-serif;
+
   transition:
     background-color 250ms ease,
     color 250ms ease;
+
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+#root {
+  min-height: 100vh;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+
+  transition:
+    background-color 250ms ease,
+    color 250ms ease;
+}
+
+/* =========================================================
+   TYPOGRAPHY
+   ========================================================= */
 
 h1,
 h2,
@@ -85,47 +140,157 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: 'Syne', sans-serif;
+  font-family: "Syne", sans-serif;
+  color: var(--text-primary);
 }
 
 .font-nums {
-  font-family: 'Space Grotesk', monospace;
+  font-family: "Space Grotesk", monospace;
 }
 
-::selection {
-  background: var(--accent-soft);
-  color: var(--accent-dark);
+/* =========================================================
+   THEME TEXT HELPERS
+   ========================================================= */
+
+.theme-text {
+  color: var(--text-primary);
 }
 
-a:focus-visible,
-button:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.theme-text-secondary {
+  color: var(--text-secondary);
 }
 
-button,
-a,
-input,
-textarea,
-select {
-  transition:
-    color 150ms ease,
-    background-color 150ms ease,
-    border-color 150ms ease,
-    opacity 150ms ease,
-    box-shadow 150ms ease;
+.theme-text-muted {
+  color: var(--text-muted);
 }
 
-img {
-  max-width: 100%;
+.hero-text,
+.supporting-text {
+  color: var(--text-secondary);
 }
 
-button {
-  font-family: inherit;
+/* =========================================================
+   FORCE COMMON TAILWIND SLATE/GRAY TEXT TO FOLLOW THE THEME
+   ========================================================= */
+
+/*
+  This is intentional.
+
+  Existing components in the project use classes such as:
+  text-slate-700
+  text-slate-600
+  text-slate-300
+  text-slate-400
+
+  Instead of having to fix every component individually,
+  these classes now follow the application's theme variables.
+*/
+
+.text-slate-700,
+.text-gray-700 {
+  color: var(--text-secondary);
 }
+
+.text-slate-600,
+.text-gray-600 {
+  color: var(--text-secondary);
+}
+
+.text-slate-500,
+.text-gray-500 {
+  color: var(--text-muted);
+}
+
+.text-slate-400,
+.text-gray-400 {
+  color: var(--text-muted);
+}
+
+.text-slate-300,
+.text-gray-300 {
+  color: var(--text-secondary);
+}
+
+.text-slate-200,
+.text-gray-200 {
+  color: var(--text-primary);
+}
+
+/* =========================================================
+   BACKGROUND HELPERS
+   ========================================================= */
+
+.bg-base {
+  background-color: var(--bg-base);
+}
+
+.bg-surface {
+  background-color: var(--bg-surface);
+}
+
+.bg-card {
+  background-color: var(--bg-card);
+}
+
+.bg-input {
+  background-color: var(--bg-input);
+}
+
+.bg-elevated {
+  background-color: var(--bg-elevated);
+}
+
+/* =========================================================
+   TEXT HELPERS
+   ========================================================= */
+
+.text-text-primary {
+  color: var(--text-primary);
+}
+
+.text-text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-text-muted {
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   BORDER HELPERS
+   ========================================================= */
+
+.border-border {
+  border-color: var(--border);
+}
+
+.border-border-strong {
+  border-color: var(--border-strong);
+}
+
+/* =========================================================
+   ACCENT HELPERS
+   ========================================================= */
+
+.text-accent {
+  color: var(--accent);
+}
+
+.bg-accent {
+  background-color: var(--accent);
+}
+
+.bg-accent-soft {
+  background-color: var(--accent-soft);
+}
+
+.border-accent {
+  border-color: var(--accent);
+}
+
+/* =========================================================
+   INPUT / FORM
+   ========================================================= */
 
 input,
 textarea,
@@ -138,34 +303,58 @@ select {
   opacity: 1;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
-  }
+/* =========================================================
+   BUTTON / LINK / FORM TRANSITIONS
+   ========================================================= */
+
+button,
+a,
+input,
+textarea,
+select {
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    opacity 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
 }
 
-/* Leaflet */
-.leaflet-div-icon {
-  background: transparent;
-  border: none;
+button {
+  font-family: inherit;
 }
 
-/* Hide scrollbar while keeping scrolling */
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
+img {
+  max-width: 100%;
 }
 
-.scrollbar-none {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
-/* Thin scrollbar */
+/* =========================================================
+   SELECTION
+   ========================================================= */
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+}
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -184,32 +373,53 @@ select {
   background: var(--text-muted);
 }
 
-/* Smooth theme transition */
-html,
-body,
-#root {
-  min-height: 100%;
+/* Hide scrollbar while keeping scrolling */
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
 
-#root {
-  background-color: var(--bg-base);
-  color: var(--text-primary);
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-/* Utility for guaranteed theme-aware text */
-.theme-text {
-  color: #000000;
+/* =========================================================
+   LEAFLET
+   ========================================================= */
+
+.leaflet-div-icon {
+  background: transparent;
+  border: none;
 }
 
-[data-theme="dark"] .theme-text {
-  color: #ffffff;
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-/* Hero/supporting text */
-.hero-text {
-  color: #000000;
-}
+/* =========================================================
+   MOBILE
+   ========================================================= */
 
-[data-theme="dark"] .hero-text {
-  color: #ffffff;
+@media (max-width: 640px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
 }
